@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>سوپر اپلیکیشن تلگرام</title>
+    <!-- اسکریپت رسمی وب‌اپ تلگرام -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- اسکریپت گوگل ری‌کپچا -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <!-- اسکریپت اتصال واقعی به ولت TON Connect -->
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <!-- آیکون‌های مدرن FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- فونت وزیرمتن -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.75);
+            --card-border: rgba(255, 255, 255, 0.12);
+            --primary-glow: #6366f1;
+            --secondary-glow: #a855f7;
+            --accent-gold: #f59e0b;
+            --text-main: #ffffff;
+            --text-sub: #94a3b8;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.2) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.2) 0px, transparent 50%);
+            color: var(--text-main);
+            font-family: 'Vazirmatn', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-x: hidden;
+            padding-bottom: 90px;
+        }
+
+        /* ===== صفحه ورود مدرن و شیک (Overlay) ===== */
+        #captcha-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            overflow-y: auto;
+        }
+
+        .auth-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 28px;
+            padding: 24px 20px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .auth-icon-wrapper {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-glow), var(--secondary-glow));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.5);
+            margin-bottom: 4px;
+        }
+
+        .auth-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .auth-sub {
+            font-size: 13px;
+            color: var(--text-sub);
+            line-height: 1.5;
+        }
+
+        /* بخش کپچای گوگل */
+        .google-recaptcha-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin: 4px 0;
+        }
+
+        /* خط جداکننده شیک */
+        .divider {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-sub);
+            font-size: 12px;
+            margin: 4px 0;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* بخش کپچای ریاضی */
+        .math-captcha-container {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .math-question-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            direction: ltr;
+        }
+
+        .math-num {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border: 1px solid var(--card-border);
+            padding: 8px 14px;
+            border-radius: 14px;
+            font-size: 22px;
+            font-weight: 900;
+            color: #38bdf8;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .math-op {
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--accent-gold);
+        }
+
+        .math-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .math-input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 12px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .math-input:focus {
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+        }
+
+        /* دکمه‌های گرد شیک */
+        .btn-round-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .btn-round {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 50px;
+            border: none;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            color: white;
+            font-family: inherit;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 8px 16px -4px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-refresh {
+            width: 46px;
+            height: 46px;
+            flex: 0 0 46px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--card-border);
+            color: var(--text-sub);
+        }
+
+        .btn-round:active {
+            transform: scale(0.95);
+        }
+
+        .error-msg {
+            color: var(--danger-color);
+            font-size: 12px;
+            font-weight: 700;
+            display: none;
+        }
+
+        /* ===== استایل‌های محیط اصلی اپلیکیشن ===== */
+        .container {
+            padding: 16px;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .profile-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .profile-card:active {
+            transform: scale(0.98);
+        }
+
+        .avatar-wrapper {
+            position: relative;
+        }
+
+        .avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-glow), var(--secondary-glow));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .badge-vip {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            background: var(--accent-gold);
+            color: #000;
+            font-size: 10px;
+            font-weight: 900;
+            padding: 2px 6px;
+            border-radius: 10px;
+            box-shadow: 0 0 8px var(--accent-gold);
+        }
+
+        .user-details {
+            flex-grow: 1;
+        }
+
+        .user-name {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .user-id {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-top: 2px;
+        }
+
+        .score-box {
+            margin-top: 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 16px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .score-title {
+            font-size: 13px;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .score-value {
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--accent-gold);
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+        }
+
+        .section-title {
+            font-size: 14px;
+            color: var(--text-sub);
+            margin: 20px 4px 10px 4px;
+            font-weight: 700;
+        }
+
+        .grid-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .action-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .action-card:active {
+            transform: translateY(4px) scale(0.96);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-card i {
+            font-size: 24px;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .action-card span {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .btn-glow-wrapper {
+            position: relative;
+            margin-top: 16px;
+            width: 100%;
+        }
+
+        .btn-glow {
+            width: 100%;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed, #db2777);
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+            border: none;
+            color: white;
+            padding: 16px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 10px 20px -5px rgba(124, 58, 237, 0.5), inset 0 2px 2px rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: transform 0.1s ease;
+        }
+
+        .btn-glow:active {
+            transform: scale(0.95) translateY(2px);
+            box-shadow: 0 5px 10px -3px rgba(124, 58, 237, 0.4);
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .referral-box {
+            background: var(--card-bg);
+            border: 1px dashed var(--secondary-glow);
+            border-radius: 18px;
+            padding: 14px;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .referral-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .referral-title {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .referral-link {
+            font-size: 13px;
+            font-weight: bold;
+            color: #38bdf8;
+            direction: ltr;
+        }
+
+        .btn-copy {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-copy:active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .footer-credits {
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-sub);
+            margin-top: 24px;
+            margin-bottom: 10px;
+            direction: ltr;
+            opacity: 0.8;
+            letter-spacing: 0.5px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0 16px 0;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-sub);
+            font-size: 11px;
+            cursor: pointer;
+            width: 20%;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+        }
+
+        .nav-item.active {
+            color: #38bdf8;
+            transform: translateY(-2px);
+        }
+
+        .nav-item.active i {
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== استایل‌های اختصاصی کانکت ولت خارجی ===== */
+        .wallet-connect-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .wallet-connect-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #0088cc, #005588);
+            border: none;
+            color: #ffffff;
+            padding: 14px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 6px 15px rgba(0, 136, 204, 0.4);
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .wallet-connect-btn:active {
+            transform: scale(0.97);
+        }
+
+        .wallet-connected-box {
+            display: none;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 14px;
+            padding: 12px;
+        }
+
+        .wallet-address {
+            font-size: 12px;
+            font-weight: 700;
+            color: #10b981;
+            direction: ltr;
+            word-break: break-all;
+        }
+
+        .btn-disconnect {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #ef4444;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- صفحه ورود تاریک، نئونی و مدرن -->
+    <div id="captcha-overlay">
+        <div class="auth-card">
+            <div class="auth-icon-wrapper">
+                <i class="fa-solid fa-shield-halved" style="color: #ffffff;"></i>
+            </div>
+            
+            <div class="auth-title">تایید هویت امنیتی</div>
+            <div class="auth-sub">برای ورود به وب‌اپلیکیشن، لطفاً هویت خود را تایید کنید.گوگل ریکپچا در حال حاضر دردسترس نمیباشد.</div>
+
+            <!-- کپچای گوگل (روش اول) -->
+            <div class="google-recaptcha-wrapper">
+                <div class="g-recaptcha" 
+                     data-sitekey="6LdODrotAAAAAEslfPfDtKqNOp2szfenrjmdeD3N" 
+                     data-callback="onCaptchaVerified">
+                </div>
+            </div>
+
+            <!-- جداکننده -->
+            <div class="divider">یا با کپچای ریاضی وارد شوید</div>
+
+            <!-- کپچای ریاضی هوشمند (روش دوم) -->
+            <div class="math-captcha-container">
+                <div class="math-question-box">
+                    <span class="math-num" id="math-num1">12</span>
+                    <span class="math-op" id="math-op">+</span>
+                    <span class="math-num" id="math-num2">34</span>
+                    <span class="math-op">=</span>
+                    <span class="math-op">؟</span>
+                </div>
+
+                <div class="math-input-wrapper">
+                    <input type="number" id="math-answer" class="math-input" placeholder="پاسخ را وارد کنید" autocomplete="off" />
+                </div>
+
+                <div class="error-msg" id="math-error">پاسخ اشتباه است! دوباره تلاش کنید.</div>
+
+                <div class="btn-round-group">
+                    <button class="btn-round btn-submit" onclick="verifyMathCaptcha()">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>تایید و ورود</span>
+                    </button>
+                    <button class="btn-round btn-refresh" onclick="generateMathQuestion()" title="سوال جدید">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- محیط اصلی اپلیکیشن -->
+    <div class="container">
+
+        <!-- ===== تب خانه ===== -->
+        <div id="tab-home" class="tab-content active">
+            <div class="profile-card" id="profile-card">
+                <div class="avatar-wrapper">
+                    <div class="avatar" id="user-avatar">U</div>
+                    <div class="badge-vip">کاربر معمولی</div>
+                </div>
+                <div class="user-details">
+                    <div class="user-name">
+                        <span id="user-name">Mehman Silverpremium</span>
+                        <i class="fa-solid fa-circle-check" style="color: #38bdf8; font-size: 14px;"></i>
+                    </div>
+                    <div class="user-id" id="user-id">آیدی: @مهمان</div>
+                </div>
+            </div>
+
+            <div class="score-box">
+                <div class="score-title">
+                    <i class="fa-solid fa-coins" style="color: var(--accent-gold);"></i>
+                    موجودی کل امتیاز:
+                </div>
+                <div class="score-value" id="user-score">زیرمجموعه گیری غیرفعال است</div>
+            </div>
+
+            <div class="btn-glow-wrapper">
+                <button class="btn-glow" onclick="triggerHaptic(); tg.showAlert('🎁 هدیه روزانه شما فعال شد! ۱۰۰ امتیاز دریافت کردید.');">
+                    <i class="fa-solid fa-gift fa-bounce"></i>
+                    <span>تلگرام پرمیوم رایگان‌</span>
+                </button>
+            </div>
+
+            <div class="section-title">بخش دسترسی سریع و خرید اشتراک</div>
+            <div class="grid-buttons">
+                <div class="action-card" onclick="triggerHaptic(); tg.showAlert('⚡ بخش ماموریت‌ها به‌زودی باز می‌شود.');">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>ماموریت‌ها</span>
+                </div>
+                <div class="action-card" onclick="triggerHaptic(); tg.showAlert('🏆 شما در رتبه ۲۴ برترین‌ها قرار دارید.');">
+                    <i class="fa-solid fa-trophy" style="background: linear-gradient(135deg, #f59e0b, #ef4444); -webkit-background-clip: text;"></i>
+                    <span>برترین‌های زیرمجموعه</span>
+                </div>
+                <div class="action-card" onclick="triggerHaptic(); tg.showAlert('💎 فروشگاه تلگرام پرمیوم فعال است.');">
+                    <i class="fa-solid fa-gem" style="background: linear-gradient(135deg, #a855f7, #ec4899); -webkit-background-clip: text;"></i>
+                    <span>خرید تلگرام پرمیوم</span>
+                </div>
+                <div class="action-card" onclick="openTelegramSupport('Unknownsupported');">
+                    <i class="fa-solid fa-headset" style="background: linear-gradient(135deg, #10b981, #059669); -webkit-background-clip: text;"></i>
+                    <span>پشتیبانی</span>
+                </div>
+            </div>
+
+            <div class="section-title">دعوت از دوستان (کسب امتیاز)</div>
+            <div class="referral-box">
+                <div class="referral-info">
+                    <span class="referral-title">لینک اختصاصی شما:</span>
+                    <span class="referral-link" id="ref-link">تا اطلاع ثانوی غیرفعال است.برای مطلع شدن به چنل سر بزنید</span>
+                </div>
+                <button class="btn-copy" onclick="copyReferral()">کپی لینک</button>
+            </div>
+        </div>
+
+        <!-- ===== تب‌های دیگر ===== -->
+        <div id="tab-tasks" class="tab-content">
+            <div class="section-title">چالش‌های فعال</div>
+            <div class="action-card" style="width: 100%; text-align: right; align-items: flex-start; margin-bottom: 10px;">
+                <i class="fa-brands fa-telegram"></i>
+                <span>عضویت در کانال اصلی</span>
+                <p style="font-size: 11px; color: var(--text-sub);">+2 امتیاز برای پرمیوم رایگان</p>
+            </div>
+        </div>
+
+        <div id="tab-wallet" class="tab-content">
+            <!-- کارت اتصال واقعی به کیف‌پول خارجی TON -->
+            <div class="section-title">کانکت ولت خارجی</div>
+            <div class="wallet-connect-card">
+                <button id="connect-wallet-btn" class="wallet-connect-btn" onclick="connectExternalWallet()">
+                    <i class="fa-solid fa-wallet" style="font-size: 18px;"></i>
+                    <span>اتصال کیف‌پول (Tonkeeper / Wallet)</span>
+                </button>
+
+                <div id="wallet-connected-box" class="wallet-connected-box">
+                    <span style="font-size: 11px; color: var(--text-sub);">کیف‌پول متصل شده:</span>
+                    <span id="wallet-address" class="wallet-address"></span>
+                    <button class="btn-disconnect" onclick="disconnectExternalWallet()">قطع اتصال ولت</button>
+                </div>
+            </div>
+
+            <div class="section-title">روش پرداخت</div>
+            <div class="score-box" style="justify-content: center; gap: 10px; cursor: pointer;" onclick="openTelegramSupport('Unknownsupported');">
+                <i class="fa-solid fa-wallet" style="font-size: 24px; color: #38bdf8;"></i>
+                <span>برای پرداخت به درگاه پرداخت مراجعه و یا به پشتیبانی تلگرام Unknownsupported@ پیام دهید</span>
+            </div>
+        </div>
+
+        <div class="footer-credits">
+            Supported By @im_bronze - @Unknownsupported
+        </div>
+
+    </div>
+
+    <!-- نوار ناوبری پایینی -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('tab-home', this)">
+            <i class="fa-solid fa-house"></i>
+            <span>خانه</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('tab-tasks', this)">
+            <i class="fa-solid fa-list-check"></i>
+            <span>ماموریت</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('tab-wallet', this)">
+            <i class="fa-solid fa-wallet"></i>
+            <span>لیست واریزی ها و ولت</span>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+
+        tg.setHeaderColor('#0f172a');
+        tg.setBackgroundColor('#0f172a');
+
+        // ----- الگوریتم کپچای ریاضی هوشمند -----
+        let currentCorrectAnswer = 0;
+
+        function generateMathQuestion() {
+            triggerHaptic();
+            document.getElementById('math-error').style.display = 'none';
+            document.getElementById('math-answer').value = '';
+
+            const operators = ['+', '-', '×', '÷'];
+            const selectedOp = operators[Math.floor(Math.random() * operators.length)];
+
+            let num1, num2;
+
+            if (selectedOp === '+') {
+                num1 = Math.floor(Math.random() * 80) + 10; // عدد دو رقمی 10 تا 89
+                num2 = Math.floor(Math.random() * 80) + 10;
+                currentCorrectAnswer = num1 + num2;
+            } else if (selectedOp === '-') {
+                num1 = Math.floor(Math.random() * 80) + 20;
+                num2 = Math.floor(Math.random() * (num1 - 10)) + 10; // مطمئن شدن از مثبت بودن حاصل
+                currentCorrectAnswer = num1 - num2;
+            } else if (selectedOp === '×') {
+                num1 = Math.floor(Math.random() * 15) + 10; // عدد دو رقمی کوچک‌تر برای ضرب آسان‌تر
+                num2 = Math.floor(Math.random() * 8) + 2;
+                currentCorrectAnswer = num1 * num2;
+            } else if (selectedOp === '÷') {
+                num2 = Math.floor(Math.random() * 8) + 2;
+                const multiplier = Math.floor(Math.random() * 10) + 5;
+                num1 = num2 * multiplier; // تقسیم بخش‌پذیر بدون اعشار
+                currentCorrectAnswer = num1 / num2;
+            }
+
+            document.getElementById('math-num1').innerText = num1;
+            document.getElementById('math-num2').innerText = num2;
+            document.getElementById('math-op').innerText = selectedOp;
+        }
+
+        function verifyMathCaptcha() {
+            const userAnswer = parseInt(document.getElementById('math-answer').value);
+            if (!isNaN(userAnswer) && userAnswer === currentCorrectAnswer) {
+                unlockApp();
+            } else {
+                triggerHaptic();
+                document.getElementById('math-error').style.display = 'block';
+                generateMathQuestion();
+            }
+        }
+
+        function onCaptchaVerified(responseToken) {
+            unlockApp();
+        }
+
+        function unlockApp() {
+            triggerHaptic();
+            document.getElementById('captcha-overlay').style.display = 'none';
+        }
+
+        // ساخت اولین سوال ریاضی به محض بالا آمدن صفحه
+        window.addEventListener('DOMContentLoaded', generateMathQuestion);
+
+        // ----- بخش کاربر و تلگرام -----
+        const user = tg.initDataUnsafe?.user;
+
+        if (user) {
+            const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+            document.getElementById('user-name').innerText = fullName || 'کاربر تلگرام';
+            
+            if (user.username) {
+                document.getElementById('user-id').innerText = `@${user.username}`;
+            } else {
+                document.getElementById('user-id').innerText = `ID: ${user.id}`;
+            }
+
+            const firstLetter = user.first_name ? user.first_name.charAt(0).toUpperCase() : 'U';
+            document.getElementById('user-avatar').innerText = firstLetter;
+
+            document.getElementById('ref-link').innerText = `https://t.me/Bot?start=${user.id}`;
+        }
+
+        function triggerHaptic() {
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+        }
+
+        function openTelegramSupport(username) {
+            triggerHaptic();
+            const telegramUrl = `https://t.me/${username}`;
+            if (tg.openTelegramLink) {
+                tg.openTelegramLink(telegramUrl);
+            } else {
+                window.open(telegramUrl, '_blank');
+            }
+        }
+
+        function switchTab(tabId, element) {
+            triggerHaptic();
+            
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+        }
+
+        function copyReferral() {
+            triggerHaptic();
+            const linkText = document.getElementById('ref-link').innerText;
+            
+            navigator.clipboard.writeText(linkText).then(() => {
+                tg.showAlert("✅ لینک دعوت با موفقیت کپی شد!");
+            }).catch(() => {
+                tg.showAlert("خطا در کپی لینک.");
+            });
+        }
+
+        // ----- بخش اتصال واقعی به کیف‌پول TON Connect -----
+        let tonConnectUI;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.TON_CONNECT_UI) {
+                tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+                    manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
+                });
+
+                tonConnectUI.onStatusChange(wallet => {
+                    if (wallet) {
+                        const address = wallet.account.address;
+                        const shortAddr = address.substring(0, 6) + '...' + address.substring(address.length - 4);
+                        document.getElementById('wallet-address').innerText = shortAddr;
+                        document.getElementById('connect-wallet-btn').style.display = 'none';
+                        document.getElementById('wallet-connected-box').style.display = 'flex';
+                        tg.showAlert("✅ کیف‌پول با موفقیت متصل شد!");
+                    } else {
+                        document.getElementById('connect-wallet-btn').style.display = 'flex';
+                        document.getElementById('wallet-connected-box').style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        async function connectExternalWallet() {
+            triggerHaptic();
+            if (tonConnectUI) {
+                try {
+                    await tonConnectUI.openModal();
+                } catch (e) {
+                    console.error(e);
+                }
+            } else {
+                tg.showAlert("خطا در بارگذاری سیستم کیف‌پول.");
+            }
+        }
+
+        async function disconnectExternalWallet() {
+            triggerHaptic();
+            if (tonConnectUI) {
+                await tonConnectUI.disconnect();
+                tg.showAlert("اتصال کیف‌پول قطع شد.");
+            }
+        }
+    </script>
+</body>
+</html>
